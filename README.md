@@ -2,11 +2,27 @@
 
 Un entorno de live coding musical usando Strudel para crear y reproducir patrones musicales en tiempo real.
 
+## � Uso Online
+
+¡Puedes usar esta aplicación directamente en tu navegador sin instalar nada!
+
+**Opción 1: GitHub Pages (Recomendado)**
+1. Ve a GitHub Pages deployment (disponible después de activar GitHub Pages en Settings)
+2. Abre [index.html](index.html) directamente en tu navegador
+3. ¡Empieza a crear música!
+
+**Opción 2: Archivo Local**
+1. Descarga [index.html](index.html)
+2. Abre el archivo en tu navegador (Chrome, Firefox, Edge, Safari)
+3. No necesitas instalar Node.js ni ningún servidor
+
 ## 🎵 Descripción
 
 Este proyecto proporciona una interfaz web interactiva para crear música usando Strudel, un sistema de live coding inspirado en TidalCycles. Puedes escribir código para generar patrones musicales y escucharlos en tiempo real.
 
-## 🚀 Instalación
+## 🚀 Instalación Local (Opcional)
+
+Si quieres ejecutar un servidor local con los archivos de ejemplo:
 
 ```bash
 # Instalar dependencias
@@ -16,7 +32,7 @@ npm install
 npm start
 ```
 
-## 💻 Uso
+## 💻 Cómo Usar
 
 1. Abre tu navegador en `http://localhost:3000`
 2. Escribe tu código en el editor

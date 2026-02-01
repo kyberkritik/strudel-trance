@@ -147,6 +147,44 @@
             border-radius: 3px;
             color: #74c69d;
         }
+        
+        .error-message {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #5a1a1a;
+            border-left: 4px solid #e94560;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            display: none;
+            color: #ffcccc;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .examples {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid #0f3460;
+                max-height: 200px;
+            }
+            
+            h1 {
+                font-size: 1.2rem;
+            }
+            
+            button {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -173,11 +211,13 @@ note("c3 [eb3,g3] f3 [ab3,c4]")
             
             <div class="info">
                 <strong>Quick Tips:</strong><br>
-                • Press <code>▶️ Play</code> to start your pattern<br>
+                • Press <code>▶️ Play</code> or <code>Ctrl+Enter</code> to start<br>
                 • Click examples on the right to load them<br>
                 • Edit code while playing for live changes<br>
                 • Use <code>.s()</code> for sounds, <code>.note()</code> for notes
             </div>
+            
+            <div id="error-display" class="error-message"></div>
         </div>
         
         <div class="examples">
@@ -215,28 +255,18 @@ note("c3 [eb3,g3] f3 [ab3,c4]")
         </div>
     </div>
     
-    <script type="module">
-        import { repl, controls } from '@strudel/core';
-        import { webaudioOutput } from '@strudel/webaudio';
-        import { registerSynthSounds } from '@strudel/webaudio';
-        
-        // Initialize Strudel
-        const { scheduler } = repl({
-            defaultOutput: webaudioOutput,
-            afterEval: (options) => {
-                updateStatus(options.error ? 'Error' : 'Playing');
-            }
-        });
-        
-        // Register synth sounds
-        await registerSynthSounds();
+    <script src="https://unpkg.com/@strudel/repl@1.3.0"></script>
+    <script>
+        const { repl, controls, getAudioContext, initAudioOnFirstClick } = strudel;
         
         const editor = document.getElementById('code-editor');
         const playBtn = document.getElementById('play-btn');
         const stopBtn = document.getElementById('stop-btn');
         const statusEl = document.getElementById('status');
+        const errorDisplay = document.getElementById('error-display');
         
         let isPlaying = false;
+        let strudelInstance;
         
         function updateStatus(status) {
             statusEl.textContent = status;
@@ -246,27 +276,81 @@ note("c3 [eb3,g3] f3 [ab3,c4]")
             }
         }
         
+        function showError(message) {
+            errorDisplay.textContent = '⚠️ ' + message;
+            errorDisplay.classList.add('show');
+            setTimeout(() => {
+                errorDisplay.classList.remove('show');
+            }, 5000);
+        }
+        
+        function hideError() {
+            errorDisplay.classList.remove('show');
+        }
+        
+        // Initialize Strudel REPL
+        async function initStrudel() {
+            try {
+                strudelInstance = await repl({
+                    onToggle: (playing) => {
+                        isPlaying = playing;
+                        playBtn.disabled = playing;
+                        stopBtn.disabled = !playing;
+                        updateStatus(playing ? 'Playing' : 'Stopped');
+                    },
+                    onError: (error) => {
+                        console.error('Strudel Error:', error);
+                        const errorMsg = error.message || error.toString();
+                        updateStatus('Error');
+                        showError(errorMsg);
+                    }
+                });
+                updateStatus('Ready - Click Play to start!');
+                console.log('Strudel initialized! 🎵');
+            } catch (error) {
+                console.error('Init error:', error);
+                updateStatus('Initialization Error');
+                showError('Failed to initialize Strudel. Please refresh the page.');
+            }
+        }
+        
+        // Initialize on page load
+        initStrudel();
+        
         playBtn.addEventListener('click', async () => {
             try {
+                hideError();
+                // Initialize audio context on first user interaction
+                await initAudioOnFirstClick();
+                
                 const code = editor.value;
-                await scheduler.evaluate(code);
-                scheduler.start();
+                await strudelInstance.evaluate(code);
+                await strudelInstance.start();
+                
                 isPlaying = true;
                 playBtn.disabled = true;
                 stopBtn.disabled = false;
                 updateStatus('Playing');
             } catch (error) {
-                console.error('Error:', error);
-                updateStatus('Error: ' + error.message);
+                console.error('Play Error:', error);
+                const errorMsg = error.message || error.toString();
+                updateStatus('Error');
+                showError(errorMsg);
             }
         });
         
-        stopBtn.addEventListener('click', () => {
-            scheduler.stop();
-            isPlaying = false;
-            playBtn.disabled = false;
-            stopBtn.disabled = true;
-            updateStatus('Stopped');
+        stopBtn.addEventListener('click', async () => {
+            try {
+                hideError();
+                await strudelInstance.stop();
+                isPlaying = false;
+                playBtn.disabled = false;
+                stopBtn.disabled = true;
+                updateStatus('Stopped');
+            } catch (error) {
+                console.error('Stop Error:', error);
+                showError('Error stopping playback');
+            }
         });
         
         // Example patterns
@@ -317,7 +401,27 @@ note("c4 e4 g4 c5 g4 e4".fast(2))
             });
         });
         
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to play/stop
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (isPlaying) {
+                    stopBtn.click();
+                } else {
+                    playBtn.click();
+                }
+            }
+        });
+        
+        // Auto-resize textarea
+        editor.addEventListener('input', () => {
+            editor.style.height = 'auto';
+            editor.style.height = editor.scrollHeight + 'px';
+        });
+        
         console.log('Strudel environment loaded! 🎵');
+        console.log('Tip: Press Ctrl/Cmd + Enter to play/stop');
     </script>
 </body>
 </html>

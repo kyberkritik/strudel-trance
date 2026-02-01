@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strudel Trance - Live Coding Environment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: #16213e;
+            padding: 1rem;
+            border-bottom: 2px solid #0f3460;
+        }
+        
+        h1 {
+            color: #e94560;
+            font-size: 1.5rem;
+        }
+        
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+        
+        #code-editor {
+            flex: 1;
+            background: #0f1419;
+            color: #e6e6e6;
+            border: 2px solid #0f3460;
+            border-radius: 4px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            align-items: center;
+        }
+        
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #d13450;
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 0.5rem 1rem;
+            background: #0f3460;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .status.playing {
+            background: #2d6a4f;
+            color: #74c69d;
+        }
+        
+        .examples {
+            width: 300px;
+            background: #16213e;
+            padding: 1rem;
+            border-left: 2px solid #0f3460;
+            overflow-y: auto;
+        }
+        
+        .examples h3 {
+            color: #e94560;
+            margin-bottom: 1rem;
+        }
+        
+        .example-item {
+            background: #0f3460;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .example-item:hover {
+            background: #1f4068;
+        }
+        
+        .example-item h4 {
+            color: #74c69d;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+        
+        .example-item p {
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+        
+        .info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #0f3460;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .info code {
+            background: #1a1a2e;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            color: #74c69d;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎵 Strudel Trance - Live Coding Environment</h1>
+    </header>
+    
+    <div class="container">
+        <div class="editor-panel">
+            <textarea id="code-editor" spellcheck="false">// Welcome to Strudel! 🎵
+// Write your patterns here and click Play to hear them
+
+// Simple drum pattern
+note("c3 [eb3,g3] f3 [ab3,c4]")
+  .s("sawtooth")
+  .gain(0.5)
+  .lpf(800)</textarea>
+            
+            <div class="controls">
+                <button id="play-btn">▶️ Play</button>
+                <button id="stop-btn" disabled>⏹️ Stop</button>
+                <span id="status" class="status">Ready</span>
+            </div>
+            
+            <div class="info">
+                <strong>Quick Tips:</strong><br>
+                • Press <code>▶️ Play</code> to start your pattern<br>
+                • Click examples on the right to load them<br>
+                • Edit code while playing for live changes<br>
+                • Use <code>.s()</code> for sounds, <code>.note()</code> for notes
+            </div>
+        </div>
+        
+        <div class="examples">
+            <h3>📚 Examples</h3>
+            
+            <div class="example-item" data-example="basic">
+                <h4>Basic Pattern</h4>
+                <p>Simple note sequence</p>
+            </div>
+            
+            <div class="example-item" data-example="drums">
+                <h4>Drum Beat</h4>
+                <p>Kick, snare, and hi-hats</p>
+            </div>
+            
+            <div class="example-item" data-example="bass">
+                <h4>Bass Line</h4>
+                <p>Deep bass pattern</p>
+            </div>
+            
+            <div class="example-item" data-example="chords">
+                <h4>Chord Progression</h4>
+                <p>Harmonic patterns</p>
+            </div>
+            
+            <div class="example-item" data-example="trance">
+                <h4>Trance Lead</h4>
+                <p>Classic trance synth</p>
+            </div>
+            
+            <div class="example-item" data-example="arp">
+                <h4>Arpeggios</h4>
+                <p>Sequenced notes</p>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { repl, controls } from '@strudel/core';
+        import { webaudioOutput } from '@strudel/webaudio';
+        import { registerSynthSounds } from '@strudel/webaudio';
+        
+        // Initialize Strudel
+        const { scheduler } = repl({
+            defaultOutput: webaudioOutput,
+            afterEval: (options) => {
+                updateStatus(options.error ? 'Error' : 'Playing');
+            }
+        });
+        
+        // Register synth sounds
+        await registerSynthSounds();
+        
+        const editor = document.getElementById('code-editor');
+        const playBtn = document.getElementById('play-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusEl = document.getElementById('status');
+        
+        let isPlaying = false;
+        
+        function updateStatus(status) {
+            statusEl.textContent = status;
+            statusEl.className = 'status';
+            if (status === 'Playing') {
+                statusEl.classList.add('playing');
+            }
+        }
+        
+        playBtn.addEventListener('click', async () => {
+            try {
+                const code = editor.value;
+                await scheduler.evaluate(code);
+                scheduler.start();
+                isPlaying = true;
+                playBtn.disabled = true;
+                stopBtn.disabled = false;
+                updateStatus('Playing');
+            } catch (error) {
+                console.error('Error:', error);
+                updateStatus('Error: ' + error.message);
+            }
+        });
+        
+        stopBtn.addEventListener('click', () => {
+            scheduler.stop();
+            isPlaying = false;
+            playBtn.disabled = false;
+            stopBtn.disabled = true;
+            updateStatus('Stopped');
+        });
+        
+        // Example patterns
+        const examples = {
+            basic: `// Basic note pattern
+note("c4 e4 g4 e4")
+  .s("triangle")
+  .lpf(1000)`,
+            
+            drums: `// Drum beat
+stack(
+  s("bd ~ bd ~"),
+  s("~ sd ~ sd"),
+  s("hh hh hh hh").gain(0.3)
+)`,
+            
+            bass: `// Deep bass line
+note("c2 ~ c2 g2 ~ ab2 ~ f2")
+  .s("sawtooth")
+  .lpf(200)
+  .gain(0.6)`,
+            
+            chords: `// Chord progression
+note("<[c3,e3,g3] [f3,a3,c4] [g3,b3,d4] [d3,fs3,a3]>")
+  .s("triangle")
+  .gain(0.4)
+  .lpf(1500)`,
+            
+            trance: `// Trance lead
+note("c5 e5 g5 b5 c6 b5 g5 e5")
+  .s("sawtooth")
+  .lpf(sine.range(500, 2000).slow(4))
+  .gain(0.5)
+  .room(0.3)`,
+            
+            arp: `// Arpeggio pattern
+note("c4 e4 g4 c5 g4 e4".fast(2))
+  .s("square")
+  .lpf(perlin.range(400, 2000))
+  .gain(0.5)`
+        };
+        
+        // Load examples
+        document.querySelectorAll('.example-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const exampleName = item.dataset.example;
+                editor.value = examples[exampleName];
+            });
+        });
+        
+        console.log('Strudel environment loaded! 🎵');
+    </script>
+</body>
+</html>
